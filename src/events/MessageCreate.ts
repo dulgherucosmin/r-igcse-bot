@@ -384,6 +384,10 @@ To change the server you're contacting, use the \`/swap\` command`,
 				threadId: thread.id,
 				guildId,
 			});
+
+			await message.author.send(
+				`Hello and welcome to ModMail! Whenever you a send message here, it will be sent to the moderators of a selected server. **Please be mindful of what you send**.`,
+			);
 		}
 
 		const embed = new EmbedBuilder()
@@ -425,7 +429,45 @@ To change the server you're contacting, use the \`/swap\` command`,
 			embeds: [embed],
 		});
 
-		await message.react("✅");
+		await message.react("📨");
+	}
+
+	private async handleSetOneWay(
+		client: DiscordClient<true>,
+		user: User,
+		thread: GuildTextBasedChannel,
+	) {
+		await PrivateDmThread.findOneAndUpdate(
+			{
+				userId: user.id,
+			},
+			{
+				oneWay: true,
+			},
+		);
+
+		await thread.edit({
+			name: `${user.tag} (${user.id}) (One-Way)`,
+		});
+	}
+
+	private async handleUnsetOneWay(
+		client: DiscordClient<true>,
+		user: User,
+		thread: GuildTextBasedChannel,
+	) {
+		await PrivateDmThread.findOneAndUpdate(
+			{
+				userId: user.id,
+			},
+			{
+				oneWay: false,
+			},
+		);
+
+		await thread.edit({
+			name: `${user.tag} (${user.id})`,
+		});
 	}
 
 	private async handleSetOneWay(
