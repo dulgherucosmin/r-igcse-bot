@@ -2,6 +2,7 @@ import { createClient } from "redis";
 
 import { ButtonInteractionRepository } from "./schemas/ButtonInteraction";
 import { GuildPreferencesRepository } from "./schemas/GuildPreferences";
+import { InfractionsRepository } from "./schemas/Infractions";
 import { KeywordRepository } from "./schemas/Keyword";
 import { PracticeQuestionRepository } from "./schemas/Question";
 import { StickyMessageRepository } from "./schemas/StickyMessage";
@@ -21,3 +22,4 @@ export const PracticeQuestionCache = new PracticeQuestionRepository(redis);
 export const UserCache = new UserRepository(redis);
 export const ButtonInteractionCache = new ButtonInteractionRepository(redis);
 export const KeywordCache = new KeywordRepository(redis);
+export const InfractionsCache = new InfractionsRepository(redis);
