@@ -67,6 +67,9 @@ export default class InfractionControlCommand extends BaseCommand {
 		interaction: DiscordChatInputCommandInteraction<"cached">,
 	) {
 		if (interaction.options.getSubcommand() === "remove") {
+
+			await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
 			// remove response from db
 			const selectedInfraction = interaction.options.getString("reason", true);
 			const separator = selectedInfraction.indexOf(": ");
@@ -86,77 +89,27 @@ export default class InfractionControlCommand extends BaseCommand {
 						infraction.rule === rule && infraction.reason === reason,
 				)
 			) {
-				await interaction.reply({
+				await interaction.editReply({
 					content: "That infraction reason does not exist.",
-					flags: MessageFlags.Ephemeral,
 				});
 				return;
 			}
 
 			await InfractionsCache.delete({ rule, reason });
-			await interaction.reply({
+			await interaction.editReply({
 			    content: `## :white_check_mark: Success!\n\(**-**) Removed \`${rule}: ${reason}\` from the infractions list.`,
-				flags: MessageFlags.Ephemeral,
 			});
 			return;
 		}
 
         const customId = uuidv4();
 
-        /*
-		// get rule and reason for a new infraction
-		const customId = uuidv4();
-		const modal = new ModalBuilder({
-			custom_id: `${customId}_modal`,
-			title: "Add an infraction reason",
-			components: [
-				new ActionRowBuilder<TextInputBuilder>({
-					type: 1,
-					components: [
-						new TextInputBuilder({
-							custom_id: "infraction_rule",
-							label: "Rule",
-							style: TextInputStyle.Short,
-							required: true,
-						}),
-					],
-				}),
-				new ActionRowBuilder<TextInputBuilder>({
-					type: 1,
-					components: [
-						new TextInputBuilder({
-							custom_id: "infraction_reason",
-							label: "Infraction reason",
-							style: TextInputStyle.Paragraph,
-							required: true,
-						}),
-					],
-				}),
-			],
-		});
-
-		await interaction.showModal(modal);
-		const modalInteraction = await interaction.awaitModalSubmit({
-			time: 600_000,
-			filter: (submitted) =>
-				submitted.customId === `${customId}_modal` &&
-				submitted.user.id === interaction.user.id,
-		});
-
-        const rule = "Rule " + modalInteraction.fields
-			.getTextInputValue("infraction_rule")
-			.trim();
-		const reason = modalInteraction.fields
-			.getTextInputValue("infraction_reason")
-			.trim();
-
-        */
         // add it to db in the format:    Rule []: Reason
 		const rule = "Rule " + interaction.options.getString("rule", true).trim();
 		const reason = interaction.options.getString("reason", true).trim();
 
 
-		//await modalInteraction.deferReply({ flags: MessageFlags.Ephemeral });
+		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
 		// show preview before adding
 		const preview = new EmbedBuilder()
@@ -182,7 +135,7 @@ export default class InfractionControlCommand extends BaseCommand {
 			}),
 		);
 
-		const response = await interaction.reply({
+		const response = await interaction.editReply({
 			embeds: [preview],
 			components: [buttons],
 		});
