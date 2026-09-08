@@ -5,7 +5,7 @@
 
 ---
 
-r/IGCSE Bot is a TypeScript Discord Bot primarily developed for the [r/IGCSE Discord Community](https://discord.gg/igcse), the largest student-run Discord for IGCSEs and A-Levels! The place to go for subject help, advice, and tips. Home of the r/IGCSE subreddit. but also used by 100+ other servers. This bot provides a rep system & leaderboard, server suggestions voting, keyword auto-replies, moderation actions automatically updating your logging channel, reaction roles, and more!
+r/IGCSE Bot is a TypeScript Discord Bot primarily developed for the [r/IGCSE Discord Community](https://discord.gg/igcse), the largest student-run Discord for IGCSEs and A-Levels with over 60,000 members, the place to go for subject help, advice, and tips. Also used by 100+ other servers. This bot provides a rep system & leaderboard, server suggestions voting, keyword auto-replies, moderation actions automatically updating your logging channel, reaction roles, and more!
 
 [Add r/IGCSE Bot to your Discord Server](https://discord.com/api/oauth2/authorize?client_id=861445044790886467&permissions=8&scope=bot).
 
