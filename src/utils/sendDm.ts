@@ -10,7 +10,6 @@ import {
 	type ThreadChannel,
 } from "discord.js";
 
-// Helper function to send a DM to a user
 const sendDm = async (
 	member: GuildMember,
 	message: string | MessagePayload | MessageCreateOptions,

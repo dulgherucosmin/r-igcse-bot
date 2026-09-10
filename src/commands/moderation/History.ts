@@ -65,36 +65,6 @@ export default class HistoryCommand extends BaseCommand {
 
 		await interaction.deferReply();
 
-		const guildMember = await interaction.guild.members.fetch(user.id);
-		const memberHighestRole = guildMember.roles.highest;
-		const modHighestRole = interaction.member.roles.highest;
-
-		// user wants their own history
-		// ensure that server owners bypass this check
-		if (interaction.user.id === user.id && (interaction.user.id !== interaction.guild.ownerId)) {
-			const error = new EmbedBuilder()
-				.setTitle(":lock: No Permission")
-				.setDescription("You do not have access to view your own history.")
-				.setColor(Colors.Red);
-			interaction.editReply({
-				embeds: [error],
-			});
-			return;
-		}
-
-		// member role is higher than the moderators role
-		// ensure that server owners bypass this check
-		if (memberHighestRole.comparePositionTo(modHighestRole) >= 0 && (interaction.user.id !== interaction.guild.ownerId)) {
-			const error = new EmbedBuilder()
-				.setTitle(":lock: No Permission")
-				.setDescription("You do not have access to this users history as their role is higher than or equal to yours.")
-				.setColor(Colors.Red);
-			interaction.editReply({
-				embeds: [error],
-			});
-			return;
-		}
-
 		const punishments = await Punishment.find({
 			guildId: interaction.guildId,
 			actionAgainst: user.id,

@@ -16,9 +16,8 @@ export async function registerCommands(client: DiscordClient, path = "") {
 
 	const commandItems = await readdir(commandsPath, { withFileTypes: true });
 
-	for (const dirent of commandItems.filter((dirent) => dirent.isDirectory())) {
-		await registerCommands(client, joinPaths(path, dirent.name));
-	}
+	for (const dirent of commandItems.filter((dirent) => dirent.isDirectory()))
+		registerCommands(client, joinPaths(path, dirent.name));
 
 	const commandFiles = commandItems
 		.filter(

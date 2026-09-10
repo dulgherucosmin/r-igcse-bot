@@ -1,7 +1,6 @@
 import { Punishment } from "@/mongo";
-import { GuildPreferencesCache, InfractionsCache } from "@/redis";
+import { GuildPreferencesCache } from "@/redis";
 import type { DiscordClient } from "@/registry/DiscordClient";
-import { Logger } from "@discordforge/logger";
 import BaseCommand, {
 	type DiscordChatInputCommandInteraction,
 } from "@/registry/Structure/BaseCommand";
@@ -15,7 +14,6 @@ import {
 	SlashCommandBuilder,
     ApplicationIntegrationType,
     InteractionContextType,
-	type AutocompleteInteraction,
 } from "discord.js";
 import humanizeDuration from "humanize-duration";
 import parse from "parse-duration";
@@ -42,8 +40,7 @@ export default class TimeoutCommand extends BaseCommand {
 					option
 						.setName("reason")
 						.setDescription("Reason for timeout")
-						.setRequired(true)
-						.setAutocomplete(true),
+						.setRequired(true),
 				)
 				.setDefaultMemberPermissions(
 					PermissionFlagsBits.ModerateMembers,
@@ -86,53 +83,38 @@ export default class TimeoutCommand extends BaseCommand {
 			: (parse(durationString, "second") ?? 86400);
 
 		if (duration < 60 || duration > 2419200) {
-			const error = new EmbedBuilder()
-				.setTitle(":lock: What are you doing?")
-				.setDescription("Timeout duration must be between 60 seconds and 28 days.")
-				.setColor(Colors.Red);
 			interaction.editReply({
-				embeds: [error],
+				content: "Duration must be between 1 minute and 28 days",
 			});
+
 			return;
 		}
 
 		const guildMember = await interaction.guild.members.fetch(user.id);
 
 		if (!guildMember) {
-			const error = new EmbedBuilder()
-				.setTitle(":question: Not Found")
-				.setDescription("I was not able to find the user in this server, they may have left or are not a member. Please re-check the User ID.")
-				.setTimestamp()
-				.setColor(Colors.Red);
 			interaction.editReply({
-				embeds: [error],
+				content: "User not found!",
 			});
+
 			return;
 		}
 
 		if (guildMember.id === interaction.user.id) {
-			const error = new EmbedBuilder()
-				.setTitle(":lock: What are you doing?")
-				.setDescription("You cannot timeout yourself, Consider a bit of grass?")
-				.setColor(Colors.Red);
 			interaction.editReply({
-				embeds: [error],
+				content: "You cannot timeout yourself.",
 			});
+
 			return;
 		}
 
 		const memberHighestRole = guildMember.roles.highest;
 		const modHighestRole = interaction.member.roles.highest;
 
-		// member role is higher than the moderators role
-		// ensure that server owners bypass this check
-		if (memberHighestRole.comparePositionTo(modHighestRole) >= 0 && (interaction.user.id !== interaction.guild.ownerId)) {
-			const error = new EmbedBuilder()
-				.setTitle(":lock: No Permission")
-				.setDescription("You are not allowed to timeout this user as their role is higher than or equal to yours.")
-				.setColor(Colors.Red);
+		if (memberHighestRole.comparePositionTo(modHighestRole) >= 0) {
 			interaction.editReply({
-				embeds: [error],
+				content:
+					"You cannot timeout this user due to role hierarchy! (Role is higher or equal to yours)",
 			});
 			return;
 		}
@@ -171,15 +153,14 @@ export default class TimeoutCommand extends BaseCommand {
 			sendDm(guildMember, {
 				embeds: [
 					new EmbedBuilder()
-						.setTitle(":mute: Timeout Modified")
+						.setTitle("Timeout Duration Modified")
 						.setColor(Colors.Red)
-						.setTimestamp()
 						.setDescription(
-							`Your timeout in **${
+							`Your timeout in ${
 								interaction.guild.name
-								}** due to due to \`${reason}\` has been modified to last ${humanizeDuration(
+							} has been modified to last ${humanizeDuration(
 								duration * 1000,
-							)} from now. Your timeout will end <t:${time}:R>.`,
+							)} from now due to *${reason}*. Your timeout will end <t:${time}:R>.`,
 						),
 				],
 			});
@@ -215,7 +196,7 @@ export default class TimeoutCommand extends BaseCommand {
 
 			const modEmbed = new EmbedBuilder()
 				.setTitle(
-					`:mute: Timeout Duration Modified | Case #${latestTimeout.caseId}`,
+					`Timeout Duration Modified | Case #${latestTimeout.caseId}`,
 				)
 				.setColor(Colors.Red)
 				.addFields([
@@ -253,7 +234,7 @@ export default class TimeoutCommand extends BaseCommand {
 				content: `changed user's timeout duration rahhhhhh \nthey have ${totalPoints} points`,
 			});
 			interaction.channel.send(
-				`:mute: ${user.username}'s timeout has been modified due to *${reason}*, it will end at <t:${time}:f>. (<t:${time}:R>)`,
+				`${user.username}'s timeout has been modified due to *${reason}*, it will end at <t:${time}:f>. (<t:${time}:R>)`,
 			);
 			return;
 		}
@@ -263,11 +244,10 @@ export default class TimeoutCommand extends BaseCommand {
 			sendDm(guildMember, {
 				embeds: [
 					new EmbedBuilder()
-						.setTitle(":mute: Timeout")
+						.setTitle("Timeout")
 						.setColor(Colors.Red)
-						.setTimestamp()
 						.setDescription(
-							`You have been timed out in **${interaction.guild.name}** for ${humanizeDuration(duration * 1000)} due to: \`${reason}\`. Your timeout will end <t:${Math.floor(Date.now() / 1000) + duration}:R>.`,
+							`You have been timed out in ${interaction.guild.name} for ${humanizeDuration(duration * 1000)} due to: \`${reason}\`. Your timeout will end <t:${Math.floor(Date.now() / 1000) + duration}:R>.`,
 						),
 				],
 			});
@@ -311,8 +291,6 @@ export default class TimeoutCommand extends BaseCommand {
 		const modEmbed = new EmbedBuilder()
 			.setTitle(`Timeout | Case #${caseNumber}`)
 			.setColor(Colors.Red)
-			.setThumbnail(user.displayAvatarURL())
-			.setTimestamp()
 			.addFields([
 				{
 					name: "User",
@@ -342,42 +320,33 @@ export default class TimeoutCommand extends BaseCommand {
 			});
 		}
 
-		const timeoutReply = new EmbedBuilder()
-			.setTitle("Infraction Points")
-			.setColor(Colors.Blurple)
-			.setDescription(`<@${user.id}> is now at ${totalPoints} points.`);
+		const timeoutReply =
+			totalPoints >= 10
+				? {
+						embeds: [
+							new EmbedBuilder()
+								.setTitle("ACTION REQUIRED")
+								.setColor(Colors.Red)
+								.setDescription(
+									`**${user.username} has ${totalPoints} points**`,
+								),
+						],
+					}
+				: {
+						embeds: [
+							new EmbedBuilder()
+								.setColor(Colors.Blurple)
+								.setDescription(
+									`${user.username} has ${totalPoints} points`,
+								),
+						],
+					};
 
-		await interaction.editReply({
-			embeds: [timeoutReply],
-			components: [],
-		});
+		interaction.editReply(timeoutReply);
 
 		const time = Math.floor(Date.now() / 1000 + duration);
 		interaction.channel.send(
-			`:mute: ${user.username} has been timed out for *${reason}* until <t:${time}:f>. (<t:${time}:R>) (Case #${caseNumber})`,
+			`${user.username} has been timed out for *${reason}* until <t:${time}:f>. (<t:${time}:R>) (Case #${caseNumber})`,
 		);
-	}
-
-	async autoComplete(interaction: AutocompleteInteraction) {
-			await infractionAutoComplete(interaction);
-		}
-}
-
-async function infractionAutoComplete(
-	interaction: AutocompleteInteraction,
-) {
-	const phrase = interaction.options.getFocused().toString();
-
-	try {
-		const reasons = await InfractionsCache.autoComplete(phrase);
-		await interaction.respond(
-			reasons.slice(0, 25).map((reason) => ({
-				name: reason,
-				value: reason,
-			})),
-		);
-	} catch (error) {
-		Logger.error(error);
-		await interaction.respond([]);
 	}
 }
