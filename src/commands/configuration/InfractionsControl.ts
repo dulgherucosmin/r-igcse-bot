@@ -34,7 +34,7 @@ export default class InfractionControlCommand extends BaseCommand {
                         .addStringOption((ruleOption) => 
                             ruleOption
                                 .setName("rule")
-                                .setDescription("Numbered Rule (e.g 12, 1a, 1b)")
+                                .setDescription("Please only enter the number. The RULE: is already added.")
                                 .setRequired(true),
                         )
                         .addStringOption((reasonOption) => 
