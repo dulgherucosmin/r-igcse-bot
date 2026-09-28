@@ -17,6 +17,7 @@ import {
 	type AutocompleteInteraction,
 } from "discord.js";
 import { Logger } from "@discordforge/logger";
+import { infractionAutoComplete } from "../infractionAutoComplete";
 
 export default class BanCommand extends BaseCommand {
 	constructor() {
@@ -234,23 +235,4 @@ export default class BanCommand extends BaseCommand {
 	async autoComplete(interaction: AutocompleteInteraction) {
 			await infractionAutoComplete(interaction);
 		}
-}
-
-async function infractionAutoComplete(
-	interaction: AutocompleteInteraction,
-) {
-	const phrase = interaction.options.getFocused().toString();
-
-	try {
-		const reasons = await InfractionsCache.autoComplete(phrase);
-		await interaction.respond(
-			reasons.slice(0, 25).map((reason) => ({
-				name: reason,
-				value: reason,
-			})),
-		);
-	} catch (error) {
-		Logger.error(error);
-		await interaction.respond([]);
-	}
 }

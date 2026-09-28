@@ -66,101 +66,119 @@ export default class InfractionControlCommand extends BaseCommand {
 		_client: DiscordClient<true>,
 		interaction: DiscordChatInputCommandInteraction<"cached">,
 	) {
-		if (interaction.options.getSubcommand() === "remove") {
+		switch (interaction.options.getSubcommand()) {
 
-            await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+			// remove subcommand
+			case "remove": {
+				await interaction.deferReply({ flags: MessageFlags.Ephemeral });
 
-			// remove response from db
-			const selectedInfraction = interaction.options.getString("reason", true);
-			const separator = selectedInfraction.indexOf(": ");
-			const rule =
-				separator === -1
-					? ""
-					: selectedInfraction.slice(0, separator).trim();
-			const reason =
-				separator === -1
-					? selectedInfraction.trim()
-					: selectedInfraction.slice(separator + 2).trim();
-			const infractions = await InfractionsCache.getAll();
+				// remove response from db
+				const selectedInfraction = interaction.options.getString("reason", true);
+				const separator = selectedInfraction.indexOf(": ");
+				const rule =
+					separator === -1
+						? ""
+						: selectedInfraction.slice(0, separator).trim();
+				const reason =
+					separator === -1
+						? selectedInfraction.trim()
+						: selectedInfraction.slice(separator + 2).trim();
+				const infractions = await InfractionsCache.getAll();
 
-            // reason does not exist
-			if (
-				!infractions.some(
-					(infraction) =>
-						infraction.rule === rule && infraction.reason === reason,
-				)
-			) {
+				// reason does not exist
+				if (
+					!infractions.some(
+						(infraction) =>
+							infraction.rule === rule && infraction.reason === reason,
+					)
+				) {
+					await interaction.editReply({
+						content: "That infraction reason does not exist.",
+					});
+					return;
+				}
+
+				await InfractionsCache.delete({ rule, reason });
 				await interaction.editReply({
-					content: "That infraction reason does not exist.",
+					content: `## :white_check_mark: Success!\n\(**-**) Removed \`${rule}: ${reason}\` from the infractions list.`,
 				});
 				return;
 			}
 
-			await InfractionsCache.delete({ rule, reason });
-			await interaction.editReply({
-			    content: `## :white_check_mark: Success!\n\(**-**) Removed \`${rule}: ${reason}\` from the infractions list.`,
-			});
-			return;
+			// add subcommand
+			default: {
+				const customId = uuidv4();
+
+				// add it to db in the format:    Rule []: Reason
+				const rule = "Rule " + interaction.options.getString("rule", true).trim();
+				const reason = interaction.options.getString("reason", true).trim();
+
+
+				await interaction.deferReply({ flags: MessageFlags.Ephemeral });
+
+				// show preview before adding
+				const preview = new EmbedBuilder()
+					.setTitle("Preview Infraction Reason")
+					.addFields(
+						{ name: "Rule", value: rule },
+						{ name: "Reason", value: reason}
+
+					)
+					.setColor(Colors.Blurple)
+
+				// buttons for adding/cancelling for ease of use
+				const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
+					new ButtonBuilder({
+						custom_id: `${customId}_add`,
+						label: "Add",
+						style: ButtonStyle.Success,
+					}),
+					new ButtonBuilder({
+						custom_id: `${customId}_cancel`,
+						label: "Cancel",
+						style: ButtonStyle.Danger,
+					}),
+				);
+
+				const response = await interaction.editReply({
+					embeds: [preview],
+					components: [buttons],
+				});
+
+				let buttonInteraction;
+
+				try {
+					buttonInteraction = await response.awaitMessageComponent({
+						time: 1_800_000,
+						filter: (button) => button.user.id === interaction.user.id,
+					});
+				} catch (error) {
+					await interaction.editReply({
+						content: "Infraction creation timed out. Please try again.",
+						embeds: [],
+						components: [],
+					});
+					return;
+				}
+
+				if (buttonInteraction.customId.endsWith("_cancel")) {
+					await buttonInteraction.editReply({
+						content: "Infraction creation cancelled.",
+						embeds: [],
+						components: [],
+					});
+					return;
+				}
+
+				// save the confirmed infraction and clear the preview controls
+				await InfractionsCache.set({ rule, reason });
+				await buttonInteraction.update({
+					content: `## :white_check_mark: Success!\n\n(**+**) Added \`${rule}: ${reason}\` to the infractions list.`,
+					embeds: [],
+					components: [],
+				});
+			}
 		}
-
-        const customId = uuidv4();
-
-        // add it to db in the format:    Rule []: Reason
-		const rule = "Rule " + interaction.options.getString("rule", true).trim();
-		const reason = interaction.options.getString("reason", true).trim();
-
-
-		await interaction.deferReply({ flags: MessageFlags.Ephemeral });
-
-		// show preview before adding
-		const preview = new EmbedBuilder()
-			.setTitle("Preview Infraction Reason")
-            .addFields(
-                { name: "Rule", value: rule },
-                { name: "Reason", value: reason}
-
-            )
-            .setColor(Colors.Blurple)
-
-        // buttons for adding/cancelling for ease of use
-		const buttons = new ActionRowBuilder<ButtonBuilder>().addComponents(
-			new ButtonBuilder({
-				custom_id: `${customId}_add`,
-				label: "Add",
-				style: ButtonStyle.Success,
-			}),
-			new ButtonBuilder({
-				custom_id: `${customId}_cancel`,
-				label: "Cancel",
-				style: ButtonStyle.Danger,
-			}),
-		);
-
-		const response = await interaction.editReply({
-			embeds: [preview],
-			components: [buttons],
-		});
-		const buttonInteraction = await response.awaitMessageComponent({
-			time: 1_800_000,
-			filter: (button) => button.user.id === interaction.user.id,
-		});
-
-		if (buttonInteraction.customId.endsWith("_cancel")) {
-			await buttonInteraction.editReply({
-				content: "Infraction creation cancelled.",
-				embeds: [],
-				components: [],
-			});
-			return;
-		}
-
-		// save the confirmed infraction and clear the preview controls
-		await InfractionsCache.set({ rule, reason });
-		await buttonInteraction.update({
-			content: `## :white_check_mark: Success!\n\n(**+**) Added \`${rule}: ${reason}\` to the infractions list.`,
-			embeds: [],
-			components: [],
-		});
 	}
 
 	async autoComplete(interaction: AutocompleteInteraction) {
