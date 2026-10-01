@@ -54,26 +54,26 @@ export default class MessageCreateEvent extends BaseEvent {
 			return;
 
 		if (message.content === "!sync_commands") {
-			if (!(await isBotDev(client, message.author.id))) {
-				return;
-			}
+      if (!(await isBotDev(client, message.author.id))) {
+        return;
+      }
 
-			await syncCommands(client)
-				.then(() => {
-					Logger.info(
-						`Synced application commands globally (by ${message.author.displayName})`,
-					);
-					message.reply("Succesfully synced commands.");
-				})
-				.catch((e) => {
-					Logger.error(
-						`Error syncing application commands globally (by ${message.author.displayName}): ${e}`,
-					);
-					message.reply("Error syncing commands.");
-				});
+      await syncCommands(client)
+        .then(() => {
+          Logger.info(
+            `Synced application commands globally (by ${message.author.displayName})`,
+          );
+          message.reply("Succesfully synced commands.");
+        })
+        .catch((e) => {
+          Logger.error(
+            `Error syncing application commands globally (by ${message.author.displayName}): ${e}`,
+          );
+          message.reply("Error syncing commands.");
+        });
 
-			return;
-		}
+      return;
+    }
 
 		if (message.inGuild()) {
 			const keyword = message.content.trim().toLowerCase();
