@@ -106,7 +106,7 @@ export default class InfractionControlCommand extends BaseCommand {
 			}
 
 			// add subcommand
-			default: {
+			case "add": {
 				const customId = uuidv4();
 
 				// add it to db in the format:    Rule []: Reason
