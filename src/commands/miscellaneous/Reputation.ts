@@ -102,30 +102,38 @@ export default class ReputationCommand extends BaseCommand {
 					...(channel ? { channelId: channel.id } : {}),
 				};
 
-				// used to calculate rep in a single channel only
-				const allTimeInChannel = await ReputationData.countDocuments(baseFilter);
-
-				const countSince = (duration: number) =>
-					ReputationData.countDocuments({
-						...baseFilter,
-						when: { $gte: new Date(now - duration) },
-					});
-
-				const [
-					lastDay,
-					lastWeek,
-					last30Days,
-					last60Days,
-					last180Days,
-					last365Days,
-					topChannels,
-				] = await Promise.all([
-					countSince(24 * 60 * 60 * 1000),
-					countSince(7 * 24 * 60 * 60 * 1000),
-					countSince(30 * 24 * 60 * 60 * 1000),
-					countSince(60 * 24 * 60 * 60 * 1000),
-					countSince(180 * 24 * 60 * 60 * 1000),
-					countSince(365 * 24 * 60 * 60 * 1000),
+				const [[counts = {
+					allTime: 0,
+					lastDay: 0,
+					lastWeek: 0,
+					last30Days: 0,
+					last60Days: 0,
+					last180Days: 0,
+					last365Days: 0,
+				}], topChannels] = await Promise.all([
+					ReputationData.aggregate<{
+						allTime: number;
+						lastDay: number;
+						lastWeek: number;
+						last30Days: number;
+						last60Days: number;
+						last180Days: number;
+						last365Days: number;
+					}>([
+						{ $match: baseFilter },
+						{
+							$group: {
+								_id: null,
+								allTime: { $sum: 1 },
+								lastDay: { $sum: { $cond: [{ $gte: ["$when", new Date(now - 24 * 60 * 60 * 1000)] }, 1, 0] } },
+								lastWeek: { $sum: { $cond: [{ $gte: ["$when", new Date(now - 7 * 24 * 60 * 60 * 1000)] }, 1, 0] } },
+								last30Days: { $sum: { $cond: [{ $gte: ["$when", new Date(now - 30 * 24 * 60 * 60 * 1000)] }, 1, 0] } },
+								last60Days: { $sum: { $cond: [{ $gte: ["$when", new Date(now - 60 * 24 * 60 * 60 * 1000)] }, 1, 0] } },
+								last180Days: { $sum: { $cond: [{ $gte: ["$when", new Date(now - 180 * 24 * 60 * 60 * 1000)] }, 1, 0] } },
+								last365Days: { $sum: { $cond: [{ $gte: ["$when", new Date(now - 365 * 24 * 60 * 60 * 1000)] }, 1, 0] } },
+							},
+						},
+					]),
 					ReputationData.aggregate<{ _id: string; rep: number }>([
 						{ $match: baseFilter },
 						{ $group: { _id: "$channelId", rep: { $sum: 1 } } },
@@ -133,6 +141,15 @@ export default class ReputationCommand extends BaseCommand {
 						{ $limit: 5 },
 					]),
 				]);
+				const {
+					allTime: allTimeInChannel,
+					lastDay,
+					lastWeek,
+					last30Days,
+					last60Days,
+					last180Days,
+					last365Days,
+				} = counts;
 
 				let embedDescription;
 
@@ -223,29 +240,38 @@ export default class ReputationCommand extends BaseCommand {
 					channelId: channel.id,
 					deleted: { $ne: true },
 				};
-				const countSince = (duration: number) =>
-					ReputationData.countDocuments({
-						...baseFilter,
-						when: { $gte: new Date(now - duration) },
-					});
-
-				const [
-					allTime,
-					lastDay,
-					lastWeek,
-					last30Days,
-					last60Days,
-					last180Days,
-					last365Days,
-					topUsers,
-				] = await Promise.all([
-					ReputationData.countDocuments(baseFilter),
-					countSince(24 * 60 * 60 * 1000),
-					countSince(7 * 24 * 60 * 60 * 1000),
-					countSince(30 * 24 * 60 * 60 * 1000),
-					countSince(60 * 24 * 60 * 60 * 1000),
-					countSince(180 * 24 * 60 * 60 * 1000),
-					countSince(365 * 24 * 60 * 60 * 1000),
+				const [[counts = {
+					allTime: 0,
+					lastDay: 0,
+					lastWeek: 0,
+					last30Days: 0,
+					last60Days: 0,
+					last180Days: 0,
+					last365Days: 0,
+				}], topUsers] = await Promise.all([
+					ReputationData.aggregate<{
+						allTime: number;
+						lastDay: number;
+						lastWeek: number;
+						last30Days: number;
+						last60Days: number;
+						last180Days: number;
+						last365Days: number;
+					}>([
+						{ $match: baseFilter },
+						{
+							$group: {
+								_id: null,
+								allTime: { $sum: 1 },
+								lastDay: { $sum: { $cond: [{ $gte: ["$when", new Date(now - 24 * 60 * 60 * 1000)] }, 1, 0] } },
+								lastWeek: { $sum: { $cond: [{ $gte: ["$when", new Date(now - 7 * 24 * 60 * 60 * 1000)] }, 1, 0] } },
+								last30Days: { $sum: { $cond: [{ $gte: ["$when", new Date(now - 30 * 24 * 60 * 60 * 1000)] }, 1, 0] } },
+								last60Days: { $sum: { $cond: [{ $gte: ["$when", new Date(now - 60 * 24 * 60 * 60 * 1000)] }, 1, 0] } },
+								last180Days: { $sum: { $cond: [{ $gte: ["$when", new Date(now - 180 * 24 * 60 * 60 * 1000)] }, 1, 0] } },
+								last365Days: { $sum: { $cond: [{ $gte: ["$when", new Date(now - 365 * 24 * 60 * 60 * 1000)] }, 1, 0] } },
+							},
+						},
+					]),
 					ReputationData.aggregate<{ _id: string; rep: number }>([
 						{ $match: baseFilter },
 						{ $group: { _id: "$reppedUser", rep: { $sum: 1 } } },
@@ -253,6 +279,15 @@ export default class ReputationCommand extends BaseCommand {
 						{ $limit: 5 },
 					]),
 				]);
+				const {
+					allTime,
+					lastDay,
+					lastWeek,
+					last30Days,
+					last60Days,
+					last180Days,
+					last365Days,
+				} = counts;
 
 				const channelEmbed = new EmbedBuilder()
 					.setDescription(
