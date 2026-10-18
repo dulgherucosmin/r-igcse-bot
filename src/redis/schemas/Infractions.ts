@@ -1,5 +1,7 @@
 import type { RedisClientType } from "redis";
 
+const SEARCH_TERM_SEPARATOR = /\s+/;
+
 export type IInfraction = {
 	rule: string;
 	reason: string;
@@ -31,14 +33,32 @@ export class InfractionsRepository {
 	// returns matching reasons for autocomplete
 	async autoComplete(phrase: string): Promise<string[]> {
 		const normalizedPhrase = phrase.trim().toLowerCase();
+		const searchTerms = normalizedPhrase
+			.split(SEARCH_TERM_SEPARATOR)
+			.filter(Boolean);
 		const infractions = await this.getAll();
 
 		return infractions
 			.map(({ rule, reason }) => `${rule}: ${reason}`)
-			.filter((infraction) =>
-				infraction.toLowerCase().includes(normalizedPhrase),
-			)
-			.toSorted();
+			.filter((infraction) => {
+				const normalizedInfraction = infraction.toLowerCase();
+				return searchTerms.every((term) =>
+					normalizedInfraction.includes(term),
+				);
+			})
+			.toSorted((first, second) => {
+				const firstContainsPhrase = first
+					.toLowerCase()
+					.includes(normalizedPhrase);
+				const secondContainsPhrase = second
+					.toLowerCase()
+					.includes(normalizedPhrase);
+
+				if (firstContainsPhrase !== secondContainsPhrase) {
+					return firstContainsPhrase ? -1 : 1;
+				}
+				return first.localeCompare(second);
+			});
 	}
 
 	// adds to db
